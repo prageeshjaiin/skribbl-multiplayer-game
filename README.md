@@ -7,10 +7,22 @@ A real-time multiplayer drawing and guessing game built with **React 19**, **Typ
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7%20%7C%206.0-blue.svg)]()
 [![React](https://img.shields.io/badge/React-19.3-61dafb.svg)]()
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-black.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 🎮 **Live Website:** [https://skribbl-multiplayer-game-bra6.onrender.com](https://skribbl-multiplayer-game-bra6.onrender.com)  
-*(Note: If visiting after a period of inactivity, the free-tier server wakes up in ~45 seconds).*
+*(Note: If visiting after a period of inactivity, Render's free-tier server spins up in ~45 seconds).*
+
+---
+
+## 📸 Screenshots & Live Gameplay
+
+| 🏠 1. Landing Page & Skribbl Avatar Customizer | 🎯 2. Secret Word Selection Phase |
+| :---: | :---: |
+| ![Home Page](./docs/screenshots/01-home-page.jpg) | ![Word Selection](./docs/screenshots/02-word-selection.jpg) |
+
+| 🖌️ 3. Live Canvas Drawing (Drawer View) | 💬 4. Progressive Letter Hints & Guessing (Guesser View) |
+| :---: | :---: |
+| ![Live Drawing](./docs/screenshots/03-drawing-live.jpg) | ![Guessing & Hints](./docs/screenshots/04-guessing-hints.jpg) |
 
 ---
 
@@ -185,18 +197,19 @@ This application is configured for **Unified Single-Service Deployment** on [Ren
    - **Start Command:** `npm start`
 3. Add Environment Variables:
    - `NODE_ENV` = `production`
-   - `CLIENT_URL` = `https://your-service-name.onrender.com`
+   - `CLIENT_URL` = `https://skribbl-multiplayer-game-bra6.onrender.com`
 
 ---
 
 ## 👤 Author
 
-**Prageesh Jain**
-- GitHub: [@prageeshjaiin](https://github.com/prageeshjaiin)
-- Project Repository: [skribbl-multiplayer-game](https://github.com/prageeshjaiin/skribbl-multiplayer-game)
+**Pragyesh Jain**
+- **Email:** [pragyeshjain28@gmail.com](mailto:pragyeshjain28@gmail.com)
+- **LinkedIn:** [linkedin.com/in/prageeshjaiin](https://www.linkedin.com/in/prageeshjaiin)
+- **GitHub:** [@prageeshjaiin](https://github.com/prageeshjaiin)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is open source and available under the [MIT License](LICENSE).
