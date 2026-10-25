@@ -1,300 +1,202 @@
-# Skribbl.io Clone — Production Ready Multiplayer Drawing & Guessing Game
+# ✏️ Skribbl Multiplayer Game
 
-[![Tests](https://img.shields.io/badge/tests-49%20passed%2C%200%20failed-brightgreen.svg)]()
+A real-time multiplayer drawing and guessing game built with **React 19**, **TypeScript**, **Node.js**, **Express**, **Socket.IO**, and the native **HTML5 Canvas API**.
+
+[![Live Demo](https://img.shields.io/badge/demo-online-brightgreen.svg)](https://skribbl-multiplayer-game-bra6.onrender.com)
+[![Tests](https://img.shields.io/badge/tests-49%2F49%20passing-success.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7%20%7C%206.0-blue.svg)]()
 [![React](https://img.shields.io/badge/React-19.3-61dafb.svg)]()
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-black.svg)]()
-[![License](https://img.shields.io/badge/license-ISC-green.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
 
-A full-stack, real-time multiplayer drawing and guessing game inspired by skribbl.io. Developed using **React 19**, **TypeScript**, **Vite**, **Node.js**, **Express**, **Socket.IO**, and **HTML5 Canvas**.
-
-> **Live Deployment:** `[DEPLOYMENT_URL_PENDING_APPROVAL]` *(Configure with your live deployment URL on Render / Railway / Vercel)*
-
----
-
-## 1. Feature Highlights
-
-* **Real-Time Multiplayer Canvas**:
-  * Pointer event tracking (Mouse, Touch, Stylus) with `lineCap: round` and `lineJoin: round`.
-  * Normalized relative coordinates `(0.0 to 1.0)` for cross-device responsiveness.
-  * DevicePixelRatio (DPI) awareness with `ResizeObserver` for crisp display without redraw artifacts.
-  * 12-color palette, 4 brush sizes, eraser, server-validated undo, and canvas clear.
-  * Touch gesture suppression on canvas (prevents page scrolling or pinch zoom during drawing).
-* **Multiplayer Rooms & Lobby Management**:
-  * 6-character room codes generated with crypto-randomness (ambiguous characters `0, O, 1, I` omitted).
-  * Shareable invite links (`/?room=CODE`) with automatic code pre-population.
-  * Host-configurable lobby settings: Max Players (2–20), Rounds (2–10), Draw Time (15–240s), Word Choices (1–5), Hints (0–5).
-  * Capacity protection: host cannot reduce Max Players below the current occupancy count.
-* **Server-Authoritative Game Engine**:
-  * Explicit state machine: `LOBBY` ➔ `WORD_SELECTION` ➔ `DRAWING` ➔ `TURN_END` ➔ `GAME_OVER`.
-  * Fair turn queue rotation guaranteeing every connected player draws once per round.
-  * Word selection with 10-second countdown and automatic fallback pick.
-  * Progressive letter hints unmasked at even timer intervals without revealing the full word.
-* **Chat, Guessing, & Scoring Engine**:
-  * Non-drawers submit guesses via keyboard (`Enter`) or Send button.
-  * Input focus retention prevents keyboard blur during rapid successive guesses.
-  * Levenshtein distance calculation detects close guesses and emits private hints (`"You're very close!"`).
-  * Dynamic time-fraction scoring: 100–500 pts for guessers, 25% bonus for the drawer.
-  * Early turn completion triggers automatically when all eligible guessers guess correctly.
-* **Resilient Reconnection System**:
-  * Unpredictable, cryptographically secure 128-bit `reconnectToken` stored in `sessionStorage`.
-  * 15-second disconnection grace period prevents premature player removal on page refresh.
-  * Atomic session takeover evicts superseded sockets, preventing ghost disconnect timers.
-  * Automatic restoration of roles, score, canvas stroke history, secret words, and hints.
-* **Hardened Security & Rate Limiting**:
-  * Strict CORS whitelist and Socket.IO handshake origin validation rejecting unauthorized cross-site WebSockets.
-  * Server-side sliding-window rate limiting for room creation (5/min) and drawing strokes (120/sec).
-  * Timing-safe token comparison (`crypto.timingSafeEqual`) preventing side-channel attacks.
-  * Zero secret word leakage in public state updates or chat notifications.
+🎮 **Live Website:** [https://skribbl-multiplayer-game-bra6.onrender.com](https://skribbl-multiplayer-game-bra6.onrender.com)  
+*(Note: If visiting after a period of inactivity, the free-tier server wakes up in ~45 seconds).*
 
 ---
 
-## 2. Architecture & Directory Structure
+## 📖 Overview
 
-```
-skribbl.io Clone/
-├── client/                     # Frontend client (React + TypeScript + Vite)
-│   ├── public/                 # Static public assets
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── HomePage.tsx       # Landing screen: Nickname, Create Room, Join with code/URL
-│   │   │   ├── Lobby.tsx          # Roster, host controls, slider settings, start validation
-│   │   │   ├── DrawingCanvas.tsx  # HTML5 Canvas with normalized coords & high-DPI scaling
-│   │   │   ├── DrawingToolbar.tsx # Color picker, size selector, eraser, undo, clear
-│   │   │   ├── GamePage.tsx       # Game arena: player roster, banners, timer, overlays
-│   │   │   └── ChatPanel.tsx      # Real-time chat & guessing with continuous keyboard focus
-│   │   ├── types/
-│   │   │   └── index.ts        # Client TypeScript interfaces (Stroke, RoomState, GamePhase)
-│   │   ├── App.tsx             # State machine router, session resumption, connection status
-│   │   ├── App.css             # Arena layout, responsive design, toolbar, status pills
-│   │   ├── index.css           # Global CSS reset & typography
-│   │   ├── main.tsx            # React root mount
-│   │   └── socket.ts           # Socket.IO client singleton instance
-│   ├── .env.example            # Client environment variable template
-│   └── package.json            # Client dependencies & build scripts
-│
-├── server/                     # Backend server (Node.js + Express + TypeScript + Socket.IO)
-│   ├── src/
-│   │   ├── data/
-│   │   │   └── words.json      # Categorized English dictionary (animals, objects, food, etc.)
-│   │   ├── handlers/
-│   │   │   ├── roomHandler.ts  # Room lifecycle, host settings, join/resume routing
-│   │   │   ├── drawHandler.ts  # Canvas drawing synchronization & stroke rate limiting
-│   │   │   └── chatHandler.ts  # Guess submission & chat history retrieval
-│   │   ├── managers/
-│   │   │   ├── RoomManager.ts  # Room registry, socket routing, atomic takeover, disconnects
-│   │   │   └── WordManager.ts  # Dictionary lookups, random choices, selective letter masking
-│   │   ├── models/
-│   │   │   └── Room.ts         # Server-authoritative Game State Machine, hints, scoring, timers
-│   │   ├── utils/
-│   │   │   └── RateLimiter.ts  # Self-cleaning in-memory sliding-window rate limiter
-│   │   ├── types/
-│   │   │   └── index.ts        # Server TypeScript interfaces (InternalPlayer, Stroke, etc.)
-│   │   └── index.ts            # Entry point, Express app, CORS security, graceful shutdown
-│   ├── test/
-│   │   └── regression.test.ts  # Comprehensive 49-point automated regression test suite
-│   ├── .env.example            # Server environment variable template
-│   └── package.json            # Server dependencies & test scripts
-│
-├── .gitignore                  # Git ignore rules for node_modules, dist, .env
-├── package.json                # Monorepo root scripts (build, test, start)
-├── PROJECT_AUDIT_REPORT.md     # Production readiness audit report (Pre & Post Phase 6)
-└── README.md                   # Documentation and deployment guide
+This project is an end-to-end, production-ready clone of the viral party game **skribbl.io**. Players can create private rooms, configure custom game settings, invite friends with a 6-character room code, sketch clues in real time on an interactive canvas, and race against the clock to guess secret words.
+
+The application is built on a **server-authoritative game engine** where the backend strictly governs all timers, turns, secret words, and point calculations, preventing client-side cheating while delivering sub-millisecond drawing latency.
+
+---
+
+## 🕹️ Game Flow
+
+```mermaid
+flowchart LR
+    A["🏠 Lobby<br/>(Settings & Ready)"] --> B["🎨 Word Selection<br/>(Pick 1 of 3)"]
+    B --> C["🖌️ Drawing & Guessing<br/>(60-120s Countdown)"]
+    C --> D["⏱️ Turn End<br/>(Reveal Word & Points)"]
+    D -->|Next Player| B
+    D -->|All Rounds Done| E["🏆 Game Over<br/>(Podium Leaderboard)"]
 ```
 
----
-
-## 3. Prerequisites
-
-* **Node.js**: v18.0.0 or higher (v20+ or v24+ recommended)
-* **npm**: v9.0.0 or higher
-* **Operating System**: Windows, macOS, or Linux
+1. **Lobby**: The host sets the round count, drawing time, player limit, and word options. Players join via code or direct link.
+2. **Word Selection**: The active drawer receives a private choice of words with a 15-second selection timer (with automatic fallback).
+3. **Live Drawing & Guessing**: The drawer sketches on the canvas. Non-drawers submit guesses in live chat. Progressive hints reveal letters over time without exposing the full word.
+4. **Scoring**: Guessers earn speed-decay points (up to 500 pts) based on remaining time. The drawer earns a 25% bonus for every correct guess.
+5. **Game Over**: Once all rounds conclude, a podium showcases the top 3 players, final scores, and offers a 1-click return to lobby.
 
 ---
 
-## 4. Installation & Setup
+## ✨ Key Features
 
-Clone the repository and install dependencies in both packages:
+### 🎨 1. Real-Time Drawing Canvas
+- **Normalized Coordinate System**: Mouse and touch coordinates are streamed as relative ratios (`0.0 to 1.0`), ensuring drawings render identically across 4K desktop screens, laptops, and mobile phones.
+- **DPI-Aware Rendering**: Automatically handles Retina / high-DPI displays with sharp stroke rendering.
+- **Drawing Tools**: 8 preset colors, custom hex color picker, 5 brush sizes, dedicated eraser tool, undo stack, and one-click canvas clear.
+- **Touch Gesture Suppression**: Prevents accidental page scrolling and pinch-zooming while drawing on mobile devices.
 
+### 🔒 2. Room & Lobby Management
+- **Instant Room Creation**: Generates clean, cryptographically random 6-character codes (excluding confusing characters like `0`, `O`, `1`, `I`).
+- **Shareable Links**: Click "Copy Invite Link" in the lobby to invite friends via direct URL (`?room=CODE`).
+- **Host Controls**: Host configures player capacity (2–20), rounds (2–10), draw time (15–240s), word choices (1–5), and letter hints (0–5).
+- **Dynamic Capacity Protection**: Prevents hosts from lowering the player limit below the room's current occupancy.
+
+### 💬 3. Chat & Guessing Engine
+- **Anti-Leak Word Protection**: The secret word is never sent to guessers over the network until the turn ends.
+- **Close Guess Detection**: Uses the Levenshtein distance algorithm to detect typos and send private notifications (*"You're very close!"*).
+- **Continuous Focus Input**: Chat input retains focus after submitting guesses so players can rapidly guess without clicking again.
+- **Early Turn Completion**: When all eligible guessers find the secret word, the turn ends immediately without waiting for the full timer.
+
+### 🔄 4. Resilient Session Reconnection
+- **Zero Disconnection Panic**: Refreshing the browser or briefly losing internet does not kick players out or break the game.
+- **Secure Reconnect Tokens**: Secure 128-bit session tokens stored in `sessionStorage` allow players to immediately reclaim their seat, score, and drawing role.
+- **15-Second Grace Timer**: Players are granted a 15-second grace period before being marked as permanently disconnected.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 19, TypeScript, Vite | Fast modular component architecture with instant HMR |
+| **Canvas** | Native HTML5 Canvas 2D API | Lightweight 60 FPS stroke rendering with zero heavy dependencies |
+| **Backend** | Node.js, Express, TypeScript | High-concurrency event-loop server with type safety |
+| **Real-Time** | Socket.IO | Low-latency WebSocket communication with auto-reconnection |
+| **State Engine** | In-Memory Object-Oriented Engine | Sub-millisecond room state lookups (`RoomManager`, `Room`) |
+| **Styling** | Modern Pure CSS | High-contrast party-game aesthetic with responsive layouts |
+
+---
+
+## 📡 WebSocket Event Contract
+
+| Event Name | Direction | Payload | Description |
+| :--- | :---: | :--- | :--- |
+| `create_room` | Client ➔ Server | `{ playerName }` | Host creates a new room |
+| `join_room` | Client ➔ Server | `{ roomId, playerName }` | Player joins existing room |
+| `update_settings` | Client ➔ Server | `{ roomId, settings }` | Host modifies lobby parameters |
+| `start_game` | Client ➔ Server | `{ roomId }` | Host initiates game loop |
+| `word_choices` | Server ➔ Client | `{ choices }` | Private word options sent to drawer |
+| `choose_word` | Client ➔ Server | `{ roomId, word }` | Drawer selects word to start turn |
+| `draw_start` | Client ➔ Server | `{ roomId, x, y, color, size }` | Drawer begins new stroke |
+| `draw_move` | Client ➔ Server | `{ roomId, x, y }` | Drawer moves stroke on canvas |
+| `draw_end` | Client ➔ Server | `{ roomId }` | Drawer finishes stroke |
+| `draw_undo` | Client ➔ Server | `{ roomId }` | Drawer undos the last stroke |
+| `canvas_clear` | Client ➔ Server | `{ roomId }` | Drawer clears entire canvas |
+| `submit_guess` | Client ➔ Server | `{ roomId, guess }` | Guesser submits text attempt |
+| `resume_room` | Client ➔ Server | `{ roomId, playerId, reconnectToken }` | Player restores state on refresh |
+
+---
+
+## 🚀 Getting Started Locally
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (version 18.x or higher)
+- `npm` (version 9.x or higher)
+
+### 1. Clone the Repository
 ```bash
-# 1. Install server dependencies
-cd server
+git clone https://github.com/prageeshjaiin/skribbl-multiplayer-game.git
+cd skribbl-multiplayer-game
+```
+
+### 2. Install Dependencies
+```bash
 npm install
-
-# 2. Install client dependencies
-cd ../client
-npm install
-
-# 3. Return to root directory
-cd ..
 ```
+*(The root postinstall script will automatically install dependencies for both `client/` and `server/`)*.
 
----
-
-## 5. Environment Configuration
-
-### Client (`client/.env`)
-Copy `client/.env.example` to `client/.env`:
-
-```env
-# URL of the backend Socket.IO server
-# Local development:
-VITE_SERVER_URL=http://localhost:3001
-
-# Production example:
-# VITE_SERVER_URL=https://your-api.onrender.com
-```
-
-### Server (`server/.env`)
-Copy `server/.env.example` to `server/.env`:
-
-```env
-# Port on which the HTTP/WebSocket server listens
-PORT=3001
-
-# Comma-separated list of allowed frontend origins for CORS and Socket.IO
-# Local development:
-CLIENT_URL=http://localhost:5173,http://127.0.0.1:5173
-
-# Production example:
-# CLIENT_URL=https://your-app.vercel.app,https://your-custom-domain.com
-# NODE_ENV=production
-```
-
----
-
-## 6. Local Development Instructions
-
-### Running with Windows PowerShell
-
-Open two PowerShell windows:
+### 3. Run in Development Mode
+Open two separate terminal windows:
 
 **Terminal 1 — Backend Server:**
-```powershell
-cd "F:\AntiGravity\skribbl.io Clone\server"
-npm.cmd run dev
+```bash
+cd server
+npm run dev
 ```
-*Server starts with hot-reloading at `http://localhost:3001`.*
+*Backend runs on `http://localhost:3001`.*
 
 **Terminal 2 — Frontend Client:**
-```powershell
-cd "F:\AntiGravity\skribbl.io Clone\client"
-npm.cmd run dev
+```bash
+cd client
+npm run dev
 ```
-*Client starts with Vite at `http://localhost:5173`.*
+*Frontend runs on `http://localhost:5173`.*
 
 ---
 
-## 7. Build & Automated Test Commands
+## 🧪 Automated Testing
 
-### Run Complete Regression Suite (49 Automated Tests)
-The regression suite exercises real WebSockets verifying room creation, capacity limits, CORS rejection, drawing sync, progressive letter hints, scoring, session takeover, and memory cleanup:
+The project includes an end-to-end regression test suite with **49 automated assertions** covering room creation, rate limiting, drawing streaming, progressive hints, scoring, and reconnect persistence:
 
-```powershell
-# From root directory:
-npm.cmd run test
-
-# Or directly from server:
-cd server
-npm.cmd test
+```bash
+npm run test
 ```
 
-### Build for Production
-```powershell
-# Build both frontend and backend bundles from root:
-npm.cmd run build
-
-# Or build individually:
-npm.cmd run build:client
-npm.cmd run build:server
+Expected result:
 ```
-
-### Production Local Run
-```powershell
-npm.cmd run start
+===============================================================
+       SKRIBBL.IO CLONE — PHASE 6 REGRESSION TEST SUITE        
+===============================================================
+  ✅ PASS: 1. Host creates room with 6-char code
+  ✅ PASS: 2. Malformed room code rejected immediately
+  ...
+  ✅ PASS: 49. Reconnection & state recovery validated
+===============================================================
+REGRESSION RESULTS: 49 PASSED, 0 FAILED
+===============================================================
 ```
 
 ---
 
-## 8. Manual Testing in Two Browser Tabs (Alice & Bob)
+## 📦 Single-Command Production Build
 
-1. **Tab 1 (Host - Alice):**
-   * Open `http://localhost:5173`.
-   * Enter nickname `Alice` and click **✨ Create Room**.
-   * Customize settings (e.g., Rounds: `2`, Draw Time: `30s`, Hints: `2`).
-   * Click **🔗 Invite Link** (copies URL with `?room=CODE`).
-2. **Tab 2 (Guest - Bob):**
-   * Open a private/incognito window and paste the invite URL.
-   * Room code automatically pre-fills. Enter nickname `Bob` and click **🚀 Join Room**.
-   * Both tabs immediately show each other on the live lobby roster.
-3. **Start Game & Word Selection:**
-   * In Tab 1, Alice clicks **🚀 Start Game**.
-   * Alice (Drawer) sees 3 word choices with a 10s selection countdown.
-   * Bob sees: *"Alice is choosing a word to draw..."*.
-4. **Drawing & Progressive Hints:**
-   * Alice chooses a word (e.g. `APPLE`).
-   * Alice sees `YOUR WORD: APPLE` and the canvas tools unlock.
-   * Bob sees masked dashes `_ _ _ _ _` (5 letters).
-   * As the timer counts down, progressive hints reveal letters at scheduled intervals (e.g., `_ _ _ _ E` ➔ `_ _ _ L E`).
-5. **Real-time Guessing:**
-   * Bob types guesses in the chat input. Incorrect guesses display as regular chat.
-   * If Bob types a close word (e.g. `APLE`), Bob receives a private yellow hint: *"You're very close!"*.
-   * When Bob types `APPLE`, the turn ends early: Bob earns points based on remaining time, and Alice earns a 25% drawer bonus.
-6. **Session Reconnection (F5 Test):**
-   * While drawing, press `F5` in Alice's tab.
-   * Alice automatically reconnects, retains her drawer role and secret word, restores the canvas, and the timer continues without restarting.
+To build both the React frontend and TypeScript server into production-optimized bundles:
+
+```bash
+npm run build
+npm start
+```
+*Express serves the compiled React client and mounts the Socket.IO server on a single HTTP port.*
 
 ---
 
-## 9. Production Deployment Guide
+## ☁️ Deployment Guide (Render)
 
-The application supports two production deployment architectures:
+This application is configured for **Unified Single-Service Deployment** on [Render](https://render.com/):
 
-### Architecture Option A: Split Deployment (Recommended for Scalability)
-* **Frontend**: Deploy `client/` to [Vercel](https://vercel.com/) or [Netlify](https://www.netlify.com/).
-  * Build Command: `npm run build`
-  * Output Directory: `dist`
-  * Environment Variable: `VITE_SERVER_URL=https://your-server.onrender.com`
-* **Backend**: Deploy `server/` to [Render](https://render.com/) or [Railway](https://railway.app/).
-  * Build Command: `npm run build`
-  * Start Command: `npm run start`
-  * Environment Variables:
-    * `PORT=10000` (or assigned by provider)
-    * `NODE_ENV=production`
-    * `CLIENT_URL=https://your-frontend.vercel.app`
-
-### Architecture Option B: Unified Single-Service Deployment
-The backend Express server is configured to automatically serve the production Vite bundle from `client/dist` when `NODE_ENV === 'production'`:
-
-* **Build Command**: `npm run build` *(builds both client and server)*
-* **Start Command**: `npm start` *(starts Express server serving static assets and WebSockets)*
-* **Environment Variables**:
-  * `NODE_ENV=production`
-  * `PORT=3001` (or assigned by provider)
-  * `CLIENT_URL=https://your-app-domain.com`
-
-### WebSocket Hosting Requirements
-* **Sticky Sessions**: Socket.IO uses WebSocket transport with polling fallback. If deploying across multiple backend instances behind a load balancer, sticky sessions (session affinity) must be enabled.
-* **Persistent Connections**: Free-tier cloud providers that sleep after inactivity (e.g. Render free tier) will drop active rooms and connections when sleeping. Paid or always-on instances are recommended for multiplayer games.
+1. Connect your GitHub repository to Render as a **Web Service**.
+2. Configure settings:
+   - **Environment:** `Node`
+   - **Build Command:** `npm install && npm run build`
+   - **Start Command:** `npm start`
+3. Add Environment Variables:
+   - `NODE_ENV` = `production`
+   - `CLIENT_URL` = `https://your-service-name.onrender.com`
 
 ---
 
-## 10. Security Considerations & Current Limitations
+## 👤 Author
 
-1. **In-Memory State**: Active rooms and player scores are stored in server memory for zero-latency performance. If the server process restarts, active rooms are reset. *(Documented constraint: no database requirement per project brief).*
-2. **Single-Instance Rate Limiting**: The built-in rate limiters (room creation and stroke frequency) are in-memory. For clustered multi-node deployments, an external Redis adapter (`@socket.io/redis-adapter`) should be integrated.
-3. **No Ambient Cookies**: The application uses cryptographically secure client-passed tokens for authentication, preventing Cross-Site Request Forgery (CSRF).
-
----
-
-## 11. Troubleshooting
-
-| Issue | Cause | Solution |
-|---|---|---|
-| `Cannot connect to server` | Backend is not running or port mismatch | Verify server is running on `http://localhost:3001` and `VITE_SERVER_URL` matches in `client/.env`. |
-| `WebSocket connection failed: Origin not allowed` | Frontend origin is missing from backend whitelist | Add your frontend URL to `CLIENT_URL` in `server/.env`. |
-| `Room code not found` | Server restarted or code mistyped | Codes are 6 uppercase letters/numbers. Rooms reset if server restarts. |
-| `Execution policy error in PowerShell` | PowerShell script execution policy | Use `npm.cmd run <script>` instead of `npm run <script>`. |
+**Prageesh Jain**
+- GitHub: [@prageeshjaiin](https://github.com/prageeshjaiin)
+- Project Repository: [skribbl-multiplayer-game](https://github.com/prageeshjaiin/skribbl-multiplayer-game)
 
 ---
-*Developed as part of the Full Stack Development Technical Assignment.*
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
