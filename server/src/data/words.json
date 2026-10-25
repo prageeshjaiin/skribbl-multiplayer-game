@@ -1,0 +1,33 @@
+{
+  "animals": [
+    "dog", "cat", "elephant", "giraffe", "monkey", "lion", "tiger", "snake",
+    "duck", "penguin", "rabbit", "bear", "horse", "cow", "pig", "sheep",
+    "frog", "dolphin", "whale", "shark", "butterfly", "bee", "spider",
+    "turtle", "crab", "owl", "panda", "fox", "deer", "kangaroo"
+  ],
+  "food": [
+    "apple", "banana", "pizza", "burger", "cake", "donut", "ice cream",
+    "taco", "sandwich", "cookie", "watermelon", "strawberry", "cheese",
+    "egg", "carrot", "corn", "tomato", "popcorn", "hot dog", "bread",
+    "grapes", "cherry", "pineapple", "chocolate", "pancake", "sushi"
+  ],
+  "objects": [
+    "guitar", "clock", "umbrella", "computer", "bicycle", "camera", "ladder",
+    "candle", "spoon", "fork", "knife", "key", "book", "scissors", "chair",
+    "table", "bed", "door", "window", "hammer", "pencil", "paintbrush",
+    "balloon", "ring", "backpack", "glasses", "lamp", "mirror", "bottle", "telephone"
+  ],
+  "nature": [
+    "tree", "mountain", "river", "cloud", "sun", "moon", "star", "rain",
+    "flower", "ocean", "island", "fire", "rainbow", "snow", "leaf", "forest",
+    "volcano", "desert", "lightning", "waterfall", "beach", "cave"
+  ],
+  "activities": [
+    "swimming", "dancing", "sleeping", "cooking", "reading", "singing",
+    "fishing", "running", "flying", "painting", "skateboarding", "climbing"
+  ],
+  "vehicles": [
+    "car", "bus", "train", "airplane", "rocket", "boat", "ship",
+    "helicopter", "truck", "submarine", "scooter", "tractor"
+  ]
+}

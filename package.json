@@ -1,0 +1,19 @@
+{
+  "name": "skribbl-clone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack Skribbl.io clone using React, TypeScript, Vite, Node.js, Express, and Socket.IO",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build:server": "npm --prefix server run build",
+    "build:client": "npm --prefix client run build",
+    "build": "npm run build:client && npm run build:server",
+    "start": "npm --prefix server start",
+    "test": "npm --prefix server test",
+    "postinstall": "npm --prefix server install && npm --prefix client install"
+  },
+  "keywords": ["skribbl", "pictionary", "socketio", "react", "typescript"],
+  "author": "",
+  "license": "ISC"
+}
